@@ -139,10 +139,7 @@ export default function Catalogo({ selectedCategory = '' }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-rose-500">Colección</p>
-          <h2 className="mt-2 text-3xl font-black text-slate-900">Catálogo completo</h2>
-        </div>
+       
 
         <button
           type="button"

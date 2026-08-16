@@ -82,7 +82,6 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-rose-500">Categorías</p>
-          <h3 className="mt-2 text-2xl font-black text-slate-900">Gestión</h3>
         </div>
 
         <button
