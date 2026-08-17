@@ -55,6 +55,20 @@ export default function App() {
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname === '/login'
   const isPublicRoute = !isAdminRoute
 
+  const openCatalogWindow = () => {
+    const url = `${window.location.origin}/catalog`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setSession(null)
+    navigate('/login', { replace: true })
+    toast.info('Sesión cerrada.')
+  }
+
+  const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
+
   if (location.pathname === '/login') {
     return (
       <AppRoutes
@@ -82,20 +96,6 @@ export default function App() {
       return <Navigate to="/login" replace state={{ from: location.pathname }} />
     }
   }
-
-  const openCatalogWindow = () => {
-    const url = `${window.location.origin}/catalog`
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setSession(null)
-    navigate('/login', { replace: true })
-    toast.info('Sesión cerrada.')
-  }
-
-  const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
 
   if (isPublicRoute) {
     return (
