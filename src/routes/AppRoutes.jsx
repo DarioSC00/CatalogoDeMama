@@ -3,6 +3,8 @@ import { Icon } from '@iconify/react'
 import Catalogo from '../features/catalog/Catalogo'
 import ProductListPanel from '../features/catalog/ProductListPanel'
 import CategoryListPanel from '../features/categories/CategoryListPanel'
+import LoginPage from '../features/auth/LoginPage'
+import ProtectedRoute from './ProtectedRoute'
 
 function CatalogView({ selectedCategory, onSelectCategory, onOpenCatalogWindow }) {
   return (
@@ -77,11 +79,23 @@ export default function AppRoutes({ selectedCategory, onSelectCategory, onRefres
           />
         }
       />
+      <Route path="/login" element={<LoginPage />} />
       <Route
         path="/admin/categories"
-        element={<CategoriesView selectedCategory={selectedCategory} onSelectCategory={onSelectCategory} />}
+        element={
+          <ProtectedRoute>
+            <CategoriesView selectedCategory={selectedCategory} onSelectCategory={onSelectCategory} />
+          </ProtectedRoute>
+        }
       />
-      <Route path="/admin/products" element={<ProductsView onRefreshCatalog={onRefreshCatalog} />} />
+      <Route
+        path="/admin/products"
+        element={
+          <ProtectedRoute>
+            <ProductsView onRefreshCatalog={onRefreshCatalog} />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/catalog" replace />} />
     </Routes>
   )

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import CatalogFilters from './CatalogFilters'
-import ProductModal from './ProductModal'
-import { createProduct, deleteProduct, getProducts, updateProduct, uploadImageToStorage } from './productService'
+import { getProducts } from './productService'
 import { getDriveDirectUrl } from '../../utils/drive'
 
 const PAGE_SIZE = 8
@@ -11,8 +10,6 @@ export default function Catalogo({ selectedCategory = '' }) {
   const [productos, setProductos] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [modalMode, setModalMode] = useState(null)
-  const [selectedProduct, setSelectedProduct] = useState(null)
   const [filters, setFilters] = useState({
     search: '',
     category: selectedCategory,
@@ -72,57 +69,6 @@ export default function Catalogo({ selectedCategory = '' }) {
     setPage(1)
   }, [filters.search, filters.category, filters.minPrice, filters.maxPrice])
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    const form = event.target
-    const formData = new FormData(form)
-
-    const payload = {
-      nombre: String(formData.get('nombre') || '').trim(),
-      descripcion: String(formData.get('descripcion') || '').trim(),
-      categoria: String(formData.get('categoria') || '').trim(),
-      precio: Number(formData.get('precio') || 0),
-    }
-
-    try {
-      if (modalMode === 'create') {
-        const file = formData.get('imagen')
-        if (!file || !(file instanceof File)) {
-          alert('Debes seleccionar una imagen.')
-          return
-        }
-
-        const publicUrl = await uploadImageToStorage(file)
-        await createProduct({ ...payload, url_imagen: publicUrl, disponible: true })
-      }
-
-      if (modalMode === 'edit' && selectedProduct) {
-        await updateProduct(selectedProduct.id, payload)
-      }
-
-      form.reset()
-      setModalMode(null)
-      setSelectedProduct(null)
-      await fetchProducts()
-    } catch (error) {
-      console.error(error)
-      alert('No se pudo guardar el producto.')
-    }
-  }
-
-  const handleDelete = async (product) => {
-    const confirmDelete = window.confirm(`¿Eliminar "${product.nombre}"?`)
-    if (!confirmDelete) return
-
-    try {
-      await deleteProduct(product.id)
-      await fetchProducts()
-    } catch (error) {
-      console.error(error)
-      alert('No se pudo eliminar el producto.')
-    }
-  }
-
   const resetFilters = () => {
     setFilters({
       search: '',
@@ -133,27 +79,11 @@ export default function Catalogo({ selectedCategory = '' }) {
   }
 
   if (loading) {
-    return <div className="py-10 text-center text-slate-500">Cargando catálogo...</div>
+    return <div className="catalog-loading">Cargando catálogo...</div>
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-       
-
-        <button
-          type="button"
-          onClick={() => {
-            setModalMode('create')
-            setSelectedProduct(null)
-          }}
-          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-        >
-          <Icon icon="mdi:plus" />
-          Agregar producto
-        </button>
-      </div>
-
+    <div className="catalog-page">
       <CatalogFilters
         filters={filters}
         onChange={(key, value) => setFilters((prev) => ({ ...prev, [key]: value }))}
@@ -161,7 +91,7 @@ export default function Catalogo({ selectedCategory = '' }) {
         onReset={resetFilters}
       />
 
-      <div className="flex items-center justify-between text-sm text-slate-500">
+      <div className="catalog-summary">
         <span>{filteredProducts.length} productos</span>
         <span>
           Página {page} de {totalPages}
@@ -174,40 +104,22 @@ export default function Catalogo({ selectedCategory = '' }) {
             const imageSrc = prod.url_imagen ? getDriveDirectUrl(prod.url_imagen) : ''
 
             return (
-              <article key={prod.id} className="card-producto">
-                <img src={imageSrc} alt={prod.nombre} loading="lazy" />
-                <div className="card-content">
-                  <span className="mb-2 inline-block rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-rose-600">
-                    {prod.categoria || 'General'}
-                  </span>
-                  <h3 className="text-lg font-bold text-slate-900">{prod.nombre}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{prod.descripcion}</p>
+              <article key={prod.id} className="catalog-card">
+                <div className="catalog-card__image-wrap">
+                  <img src={imageSrc} alt={prod.nombre} loading="lazy" />
+                  <span className="catalog-card__tag">{prod.categoria || 'General'}</span>
+                </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <p className="text-xl font-black text-rose-500">
-                      ${Number(prod.precio || 0).toLocaleString('es-CO')}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedProduct(prod)
-                          setModalMode('edit')
-                        }}
-                        className="rounded-full border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-100"
-                        aria-label="Editar"
-                      >
-                        <Icon icon="mdi:pencil" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(prod)}
-                        className="rounded-full border border-rose-200 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100"
-                        aria-label="Eliminar"
-                      >
-                        <Icon icon="mdi:trash-can-outline" />
-                      </button>
-                    </div>
+                <div className="catalog-card__content">
+                  <h3>{prod.nombre}</h3>
+                  <p>{prod.descripcion || 'Producto destacado de la colección.'}</p>
+
+                  <div className="catalog-card__footer">
+                    <p className="catalog-card__price">${Number(prod.precio || 0).toLocaleString('es-CO')}</p>
+                    <button type="button" className="catalog-card__cta">
+                      <Icon icon="mdi:cart-plus" />
+                      Ver más
+                    </button>
                   </div>
                 </div>
               </article>
@@ -215,43 +127,23 @@ export default function Catalogo({ selectedCategory = '' }) {
           })}
         </div>
       ) : (
-        <div className="rounded-3xl border border-dashed border-rose-200 bg-rose-50 p-8 text-center text-slate-500">
-          No se encontraron productos con esos filtros.
-        </div>
+        <div className="catalog-empty-state">No se encontraron productos con esos filtros.</div>
       )}
 
       {filteredProducts.length > PAGE_SIZE && (
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-            disabled={page === 1}
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        <div className="catalog-pagination">
+          <button type="button" onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1}>
             Anterior
           </button>
-          <span className="text-sm font-medium text-slate-600">{page}</span>
+          <span>{page}</span>
           <button
             type="button"
             onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
             disabled={page === totalPages}
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Siguiente
           </button>
         </div>
-      )}
-
-      {modalMode && (
-        <ProductModal
-          mode={modalMode}
-          product={selectedProduct}
-          onClose={() => {
-            setModalMode(null)
-            setSelectedProduct(null)
-          }}
-          onSubmit={handleSubmit}
-        />
       )}
     </div>
   )
