@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import CategoryModal from './CategoryModal'
 import { createCategory, deleteCategory, getCategories, updateCategory } from './categoryService'
+import { normalizeText, validateRequiredText } from '../../utils/validation'
 
 export default function CategoryListPanel({ onCategoryChange, selectedCategory }) {
   const [categories, setCategories] = useState([])
@@ -32,10 +33,11 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
   const handleSubmit = async (event) => {
     event.preventDefault()
     const form = event.target
-    const nombre = String(new FormData(form).get('nombre') || '').trim()
+    const nombre = normalizeText(new FormData(form).get('nombre'))
 
-    if (!nombre) {
-      toast.warn('Ingresa un nombre válido.')
+    const validationError = validateRequiredText(nombre, 'El nombre de la categoría')
+    if (validationError) {
+      toast.warn(validationError)
       return
     }
 

@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import imageCompression from 'browser-image-compression'
 import { supabase } from '../../supabaseClient'
 import { getCategories } from '../categories/categoryService'
+import { normalizeText, validateDescription, validateImage, validatePrice, validateRequiredText } from '../../utils/validation'
 
 export default function NuevoProducto({ onProductoCreado }) {
   const [nombre, setNombre] = useState('')
@@ -29,8 +30,15 @@ export default function NuevoProducto({ onProductoCreado }) {
   const manejarSubida = async (e) => {
     e.preventDefault()
 
-    if (!imagen) {
-      alert('Selecciona una foto del producto.')
+    const validationError =
+      validateRequiredText(nombre, 'El nombre') ||
+      validatePrice(precio) ||
+      validateRequiredText(categoria, 'La categoría') ||
+      validateDescription(descripcion) ||
+      validateImage(imagen)
+
+    if (validationError) {
+      alert(validationError)
       return
     }
 
@@ -58,10 +66,10 @@ export default function NuevoProducto({ onProductoCreado }) {
 
       const { error: dbError } = await supabase.from('productos').insert([
         {
-          nombre,
-          precio: Number(precio || 0),
-          descripcion,
-          categoria,
+          nombre: normalizeText(nombre),
+          precio: Number(precio),
+          descripcion: normalizeText(descripcion),
+          categoria: normalizeText(categoria),
           url_imagen: urlData.publicUrl,
           disponible: true,
         },
@@ -96,14 +104,16 @@ export default function NuevoProducto({ onProductoCreado }) {
         </div>
       </div>
 
-      <input type="text" placeholder="Nombre del producto" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-      <input type="number" placeholder="Precio (COP)" value={precio} onChange={(e) => setPrecio(e.target.value)} required />
+      <input type="text" placeholder="Nombre del producto" value={nombre} onChange={(e) => setNombre(e.target.value)} minLength={2} maxLength={80} required />
+      <input type="number" placeholder="Precio (COP)" value={precio} onChange={(e) => setPrecio(e.target.value)} min="0.01" step="0.01" required />
       <input
         type="text"
         list="nuevo-producto-categories"
         placeholder="Categoría"
         value={categoria}
         onChange={(e) => setCategoria(e.target.value)}
+        minLength={2}
+        maxLength={80}
         required
       />
       <datalist id="nuevo-producto-categories">
@@ -111,7 +121,7 @@ export default function NuevoProducto({ onProductoCreado }) {
           <option key={category.id} value={category.nombre} />
         ))}
       </datalist>
-      <textarea placeholder="Descripción corta" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={4} />
+      <textarea placeholder="Descripción corta" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={4} minLength={10} maxLength={500} required />
       <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files[0])} required />
 
       <button type="submit" disabled={subiendo}>

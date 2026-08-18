@@ -27,6 +27,8 @@ export default function CategoryModal({ mode, category, onClose, onSubmit }) {
               name="nombre"
               defaultValue={category?.nombre || ''}
               required
+              minLength={2}
+              maxLength={80}
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
             />
           </label>

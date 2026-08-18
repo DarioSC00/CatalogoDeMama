@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import { supabase } from '../../supabaseClient'
+import { normalizeText } from '../../utils/validation'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -14,8 +15,21 @@ export default function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (!email.trim() || !password.trim()) {
+    const normalizedEmail = normalizeText(email).toLowerCase()
+    const normalizedPassword = password.trim()
+
+    if (!normalizedEmail || !normalizedPassword) {
       toast.error('Completa el correo y la contraseña.')
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      toast.error('Ingresa un correo electrónico válido.')
+      return
+    }
+
+    if (normalizedPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres.')
       return
     }
 
@@ -23,15 +37,15 @@ export default function LoginPage() {
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+        email: normalizedEmail,
+        password: normalizedPassword,
       })
 
       if (error) {
         throw error
       }
 
-      const redirectPath = location.state?.from || '/admin/products'
+      const redirectPath = location.state?.from || '/admin/dashboard'
       navigate(redirectPath, { replace: true })
       toast.success('Sesion iniciada correctamente.')
     } catch (error) {

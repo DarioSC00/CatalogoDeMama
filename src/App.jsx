@@ -6,6 +6,7 @@ import AppRoutes from './routes/AppRoutes'
 import { supabase } from './supabaseClient'
 
 const NAV_ITEMS = [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: 'mdi:view-dashboard-outline' },
   { to: '/catalog', label: 'Catálogo', icon: 'mdi:storefront-outline' },
   { to: '/admin/categories', label: 'Categorías', icon: 'mdi:tag-outline' },
   { to: '/admin/products', label: 'Productos', icon: 'mdi:package-variant-closed' },
@@ -60,6 +61,8 @@ export default function App() {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  const openAdminPanel = () => navigate(session ? '/admin/dashboard' : '/login')
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setSession(null)
@@ -68,6 +71,7 @@ export default function App() {
   }
 
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
+  const currentNavItem = NAV_ITEMS.find((item) => item.to === location.pathname)
 
   if (location.pathname === '/login') {
     return (
@@ -79,6 +83,7 @@ export default function App() {
         }}
         onRefreshCatalog={() => setRefreshKey((k) => k + 1)}
         onOpenCatalogWindow={openCatalogWindow}
+        onOpenAdminPanel={openAdminPanel}
       />
     )
   }
@@ -115,9 +120,9 @@ export default function App() {
                 <Icon icon={theme === 'light' ? 'mdi:weather-night' : 'mdi:white-balance-sunny'} />
                 {theme === 'light' ? 'Oscuro' : 'Claro'}
               </button>
-              <button type="button" onClick={() => navigate('/login')} className="neon-button primary">
+              <button type="button" onClick={() => navigate(session ? '/admin/dashboard' : '/login')} className="neon-button primary">
                 <Icon icon="mdi:shield-account" />
-                Admin
+                {session ? 'Panel admin' : 'Admin'}
               </button>
             </div>
           </header>
@@ -130,6 +135,7 @@ export default function App() {
             }}
             onRefreshCatalog={() => setRefreshKey((k) => k + 1)}
             onOpenCatalogWindow={openCatalogWindow}
+            onOpenAdminPanel={openAdminPanel}
           />
         </div>
       </div>
@@ -171,7 +177,7 @@ export default function App() {
                   className={({ isActive: navIsActive }) => {
                     const active = navIsActive || (item.to === '/catalog' && location.pathname === '/')
                     return `group flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
-                      active ? 'bg-[color:var(--admin-active)] text-white shadow-[0_0_22px_rgba(251,113,133,0.28)]' : 'bg-[color:var(--surface)] text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-alt)]'
+                      active ? 'admin-nav-link is-active' : 'admin-nav-link'
                     } ${sidebarOpen ? '' : 'justify-center'}`
                   }}
                 >
@@ -215,6 +221,17 @@ export default function App() {
         </aside>
 
         <main className="flex-1 p-4 md:p-8">
+          <header className="admin-topbar">
+            <div>
+              <p className="admin-topbar__eyebrow">Panel de administración</p>
+              <h2 className="admin-topbar__title">{currentNavItem?.label || 'Panel'}</h2>
+            </div>
+            <div className="admin-topbar__user">
+              <Icon icon="mdi:account-circle-outline" />
+              <span>{session?.user?.email || 'Administrador'}</span>
+            </div>
+          </header>
+
           <section className="mb-8 grid gap-4 md:grid-cols-3">
             {stats.map((item) => (
               <div key={item.label} className="rounded-3xl border border-[color:var(--border-soft)] bg-[color:var(--surface)] p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
@@ -233,6 +250,7 @@ export default function App() {
               }}
               onRefreshCatalog={() => setRefreshKey((k) => k + 1)}
               onOpenCatalogWindow={openCatalogWindow}
+              onOpenAdminPanel={openAdminPanel}
             />
           </div>
         </main>

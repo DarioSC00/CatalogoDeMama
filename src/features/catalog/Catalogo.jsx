@@ -78,12 +78,50 @@ export default function Catalogo({ selectedCategory = '' }) {
     })
   }
 
+  const featuredProduct = productos[0]
+  const totalInventory = productos.reduce((total, product) => total + Number(product.stock || 0), 0)
+  const averagePrice = productos.length
+    ? productos.reduce((total, product) => total + Number(product.precio || 0), 0) / productos.length
+    : 0
+
   if (loading) {
     return <div className="catalog-loading">Cargando catálogo...</div>
   }
 
   return (
     <div className="catalog-page">
+      <section className="catalog-hero">
+        <div className="catalog-hero__copy">
+          <p className="eyebrow">Una selección hecha para ti</p>
+          <h2>Encuentra algo<br /><em>extraordinario.</em></h2>
+          <p className="catalog-hero__lead">Piezas especiales, elegidas con calma y presentadas para inspirar tu próxima elección.</p>
+          <div className="catalog-hero__stats">
+            <span><strong>{productos.length}</strong> piezas</span>
+            <span><strong>{categories.length}</strong> colecciones</span>
+          </div>
+        </div>
+        <div className="catalog-hero__visual">
+          <div className="catalog-hero__orb" />
+          {featuredProduct?.url_imagen ? (
+            <img src={getDriveDirectUrl(featuredProduct.url_imagen)} alt={featuredProduct.nombre} />
+          ) : (
+            <Icon icon="mdi:sparkles" className="catalog-hero__sparkle" />
+          )}
+          <div className="catalog-hero__note"><Icon icon="mdi:star-four-points" /> Selección de hoy</div>
+        </div>
+      </section>
+
+      <section className="catalog-insights" aria-label="Resumen del catálogo">
+        <div><Icon icon="mdi:package-variant-closed" /><span>Inventario</span><strong>{totalInventory || productos.length} <small>unidades</small></strong></div>
+        <div><Icon icon="mdi:shape-outline" /><span>Categorías</span><strong>{categories.length} <small>colecciones</small></strong></div>
+        <div><Icon icon="mdi:tag-outline" /><span>Precio medio</span><strong>${Math.round(averagePrice).toLocaleString('es-CO')}</strong></div>
+      </section>
+
+      <div className="catalog-section-heading">
+        <div><p className="eyebrow">Explora la colección</p><h2>Todo lo que te gusta</h2></div>
+        <span>{filteredProducts.length} resultados</span>
+      </div>
+
       <CatalogFilters
         filters={filters}
         onChange={(key, value) => setFilters((prev) => ({ ...prev, [key]: value }))}
@@ -92,7 +130,7 @@ export default function Catalogo({ selectedCategory = '' }) {
       />
 
       <div className="catalog-summary">
-        <span>{filteredProducts.length} productos</span>
+        <span>Mostrando <strong>{filteredProducts.length}</strong> productos</span>
         <span>
           Página {page} de {totalPages}
         </span>
@@ -106,8 +144,9 @@ export default function Catalogo({ selectedCategory = '' }) {
             return (
               <article key={prod.id} className="catalog-card">
                 <div className="catalog-card__image-wrap">
-                  <img src={imageSrc} alt={prod.nombre} loading="lazy" />
+                  {imageSrc ? <img src={imageSrc} alt={prod.nombre} loading="lazy" /> : <div className="catalog-card__placeholder"><Icon icon="mdi:image-outline" /></div>}
                   <span className="catalog-card__tag">{prod.categoria || 'General'}</span>
+                  <button type="button" className="catalog-card__favorite" aria-label={`Guardar ${prod.nombre}`}><Icon icon="mdi:heart-outline" /></button>
                 </div>
 
                 <div className="catalog-card__content">
@@ -116,9 +155,8 @@ export default function Catalogo({ selectedCategory = '' }) {
 
                   <div className="catalog-card__footer">
                     <p className="catalog-card__price">${Number(prod.precio || 0).toLocaleString('es-CO')}</p>
-                    <button type="button" className="catalog-card__cta">
-                      <Icon icon="mdi:cart-plus" />
-                      Ver más
+                    <button type="button" className="catalog-card__cta" aria-label={`Ver ${prod.nombre}`}>
+                      <Icon icon="mdi:arrow-top-right" />
                     </button>
                   </div>
                 </div>

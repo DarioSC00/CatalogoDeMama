@@ -25,7 +25,7 @@ VITE_SUPABASE_ANON_KEY=tu-clave-anon-publica
 npm run dev
 ```
 
-4. Crear tabla `productos` y bucket `fotos-catalogo` en Supabase (ver instrucciones en el dashboard).
+4. Ejecutar `supabase/schema.sql` completo en el SQL Editor de Supabase. Ese script crea las tablas, el bucket público `fotos-catalogo` y sus políticas de Storage.
 
 5. Uso de imágenes desde Google Drive
 

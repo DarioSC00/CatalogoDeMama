@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import ProductModal from './ProductModal'
 import { createProduct, deleteProduct, getProducts, updateProduct, uploadImageToStorage } from './productService'
+import { normalizeText, validateDescription, validateImage, validatePrice, validateRequiredText, validateStock } from '../../utils/validation'
 
 export default function ProductListPanel({ onProductChange }) {
   const [products, setProducts] = useState([])
@@ -39,17 +40,31 @@ export default function ProductListPanel({ onProductChange }) {
     const formData = new FormData(form)
 
     const payload = {
-      nombre: String(formData.get('nombre') || '').trim(),
-      descripcion: String(formData.get('descripcion') || '').trim(),
-      categoria: String(formData.get('categoria') || '').trim(),
-      precio: Number(formData.get('precio') || 0),
+      nombre: normalizeText(formData.get('nombre')),
+      descripcion: normalizeText(formData.get('descripcion')),
+      categoria: normalizeText(formData.get('categoria')),
+      precio: Number(formData.get('precio')),
+      stock: Number(formData.get('stock')),
+    }
+
+    const validationError =
+      validateRequiredText(payload.nombre, 'El nombre') ||
+      validateDescription(payload.descripcion) ||
+      validateRequiredText(payload.categoria, 'La categoría') ||
+      validatePrice(formData.get('precio')) ||
+      validateStock(formData.get('stock'))
+
+    if (validationError) {
+      toast.warn(validationError)
+      return
     }
 
     try {
       if (modalMode === 'create') {
         const file = formData.get('imagen')
-        if (!file || !(file instanceof File)) {
-          toast.warn('Debes seleccionar una imagen.')
+        const imageError = validateImage(file)
+        if (imageError) {
+          toast.warn(imageError)
           return
         }
 
@@ -125,6 +140,7 @@ export default function ProductListPanel({ onProductChange }) {
               <th className="px-3 py-2.5 font-semibold">Nombre</th>
               <th className="px-3 py-2.5 font-semibold">Precio</th>
               <th className="px-3 py-2.5 font-semibold">Categoría</th>
+              <th className="px-3 py-2.5 font-semibold">Stock</th>
               <th className="px-3 py-2.5 font-semibold text-right">Acciones</th>
             </tr>
           </thead>

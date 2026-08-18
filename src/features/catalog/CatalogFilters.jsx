@@ -3,6 +3,10 @@ import { Icon } from '@iconify/react'
 export default function CatalogFilters({ filters, onChange, categories, onReset }) {
   return (
     <div className="catalog-filter-panel">
+      <div className="catalog-filter-heading">
+        <div><Icon icon="mdi:tune-variant" /><span>Filtrar piezas</span></div>
+        <span>Refina tu búsqueda</span>
+      </div>
       <div className="catalog-filter-row">
         <label className="catalog-filter-field">
           <span>Buscar</span>

@@ -43,6 +43,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               defaultValue={product?.nombre || ''}
               name="nombre"
               required
+              minLength={2}
+              maxLength={80}
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
             />
           </label>
@@ -54,6 +56,7 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               name="precio"
               type="number"
               min="0"
+              step="0.01"
               required
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
             />
@@ -67,6 +70,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               list="product-categories"
               placeholder="Selecciona una categoría"
               required
+              minLength={2}
+              maxLength={80}
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
             />
             <datalist id="product-categories">
@@ -82,6 +87,22 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               defaultValue={product?.descripcion || ''}
               name="descripcion"
               rows={4}
+              required
+              minLength={10}
+              maxLength={500}
+              className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            Stock
+            <input
+              defaultValue={product?.stock || ''}
+              name="stock"
+              type="number"
+              min="0"
+              step="1"
+              required
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
             />
           </label>
