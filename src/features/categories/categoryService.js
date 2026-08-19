@@ -9,15 +9,15 @@ export async function getCategories() {
   return data || []
 }
 
-export async function createCategory(nombre) {
-  const { data, error } = await supabase.from(TABLE).insert([{ nombre }]).select().single()
+export async function createCategory(category) {
+  const { data, error } = await supabase.from(TABLE).insert([category]).select().single()
 
   if (error) throw error
   return data
 }
 
-export async function updateCategory(id, nombre) {
-  const { data, error } = await supabase.from(TABLE).update({ nombre }).eq('id', id).select().single()
+export async function updateCategory(id, categoryUpdates) {
+  const { data, error } = await supabase.from(TABLE).update(categoryUpdates).eq('id', id).select().single()
 
   if (error) throw error
   return data

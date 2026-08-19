@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import { getProducts } from '../catalog/productService'
 import { getDriveDirectUrl } from '../../utils/drive'
+import { chatWithAssistant } from '../../services/aiService'
 
 const COLORS = ['#e85d8c', '#7c6ee6', '#e6a23c', '#4eaa91', '#d979b2', '#718096']
 const formatMoney = (value) => `$${Math.round(value).toLocaleString('es-CO')}`
@@ -50,6 +51,8 @@ function CategoryDonut({ categories, total }) {
 export default function Dashboard() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [aiInsight, setAiInsight] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -84,12 +87,48 @@ export default function Dashboard() {
   const barProducts = useMemo(() => [...products].sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0)).slice(0, 6), [products])
   const maxStock = Math.max(...barProducts.map((product) => Number(product.stock || 0)), 1)
 
+  const generateAiInsight = async () => {
+    if (products.length === 0) return;
+    try {
+      setAiLoading(true);
+      const prompt = `Como analista de negocios, resume el estado de este inventario en 2 oraciones concisas y motivadoras. Datos: ${products.length} productos, valor total ${formatMoney(metrics.value)}, ${metrics.categories.length} categorías. Las categorías principales son: ${categoryData.map(c => c.name).join(', ')}.`;
+      // We reuse chatWithAssistant or generateContent directly. Since chatWithAssistant expects a user message and catalog...
+      // Let's just create a new function in aiService or just use chatWithAssistant with empty catalog for simplicity.
+      // But chatWithAssistant uses the catalog format. Let's just pass the prompt as user message and empty array for catalog.
+      const response = await chatWithAssistant(prompt, []);
+      setAiInsight(response);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo generar el análisis IA.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="dashboard-page">
       <section className="dashboard-welcome">
         <div><p className="eyebrow">Buenos días, admin</p><h2>Todo bajo control.</h2><p>Una mirada clara a tu tienda, tus productos y el ritmo de tu inventario.</p></div>
-        <div className="dashboard-welcome__mark"><Icon icon="mdi:sparkles" /><span>Resumen<br />en vivo</span></div>
+        <button 
+          onClick={generateAiInsight}
+          disabled={aiLoading || loading || products.length === 0}
+          className="dashboard-welcome__mark hover:scale-105 transition-transform" 
+          style={{ border: 'none', background: 'var(--neon-accent)', color: 'white', cursor: 'pointer' }}
+        >
+          {aiLoading ? <Icon icon="mdi:loading" className="animate-spin" /> : <Icon icon="mdi:robot-outline" />}
+          <span>{aiLoading ? 'Analizando...' : 'Análisis IA'}</span>
+        </button>
       </section>
+
+      {aiInsight && (
+        <section className="mb-6 rounded-2xl bg-rose-50 p-4 border border-rose-100 shadow-sm flex items-start gap-3">
+          <Icon icon="mdi:robot-outline" className="text-rose-500 text-2xl shrink-0 mt-1" />
+          <div>
+            <h4 className="text-sm font-bold text-rose-700 mb-1">Análisis Inteligente</h4>
+            <p className="text-sm text-rose-900 leading-relaxed">{aiInsight}</p>
+          </div>
+        </section>
+      )}
 
       <section className="dashboard-metrics">
         <div><span className="dashboard-metric__icon pink"><Icon icon="mdi:package-variant-closed" /></span><p>Productos</p><strong>{loading ? '...' : products.length}</strong><small>en catálogo</small></div>

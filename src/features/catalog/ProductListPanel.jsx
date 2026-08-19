@@ -141,6 +141,7 @@ export default function ProductListPanel({ onProductChange }) {
               <th className="px-3 py-2.5 font-semibold">Precio</th>
               <th className="px-3 py-2.5 font-semibold">Categoría</th>
               <th className="px-3 py-2.5 font-semibold">Stock</th>
+              <th className="px-3 py-2.5 font-semibold">Estado</th>
               <th className="px-3 py-2.5 font-semibold text-right">Acciones</th>
             </tr>
           </thead>
@@ -162,7 +163,29 @@ export default function ProductListPanel({ onProductChange }) {
                     </span>
                   </td>
                   <td className="px-3 py-3">
+                    <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${product.disponible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {product.disponible ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">
                     <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await updateProduct(product.id, { disponible: !product.disponible });
+                            toast.success(`Producto ${product.disponible ? 'desactivado' : 'activado'}.`);
+                            await fetchProducts();
+                            if (onProductChange) onProductChange();
+                          } catch (err) {
+                            toast.error('Error al cambiar el estado.');
+                          }
+                        }}
+                        className={`rounded-full border p-2 ${product.disponible ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                        aria-label={product.disponible ? 'Desactivar producto' : 'Activar producto'}
+                      >
+                        <Icon icon={product.disponible ? 'mdi:eye-off-outline' : 'mdi:eye-outline'} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => {

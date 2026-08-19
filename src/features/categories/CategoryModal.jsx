@@ -33,6 +33,18 @@ export default function CategoryModal({ mode, category, onClose, onSubmit }) {
             />
           </label>
 
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            Descripción
+            <textarea
+              name="descripcion"
+              defaultValue={category?.descripcion || ''}
+              rows={3}
+              maxLength={250}
+              placeholder="Opcional: Descripción de la categoría"
+              className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+            />
+          </label>
+
           <div className="flex items-center justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100">
               Cancelar

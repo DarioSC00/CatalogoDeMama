@@ -33,7 +33,9 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
   const handleSubmit = async (event) => {
     event.preventDefault()
     const form = event.target
-    const nombre = normalizeText(new FormData(form).get('nombre'))
+    const formData = new FormData(form)
+    const nombre = normalizeText(formData.get('nombre'))
+    const descripcion = normalizeText(formData.get('descripcion')) || null
 
     const validationError = validateRequiredText(nombre, 'El nombre de la categoría')
     if (validationError) {
@@ -43,12 +45,12 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
 
     try {
       if (modalMode === 'create') {
-        await createCategory(nombre)
+        await createCategory({ nombre, descripcion, disponible: true })
         toast.success('Categoría creada correctamente.')
       }
 
       if (modalMode === 'edit' && selectedCategoryItem) {
-        await updateCategory(selectedCategoryItem.id, nombre)
+        await updateCategory(selectedCategoryItem.id, { nombre, descripcion })
         toast.success('Categoría actualizada.')
       }
 
@@ -114,6 +116,7 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-3 py-2.5 font-semibold">Nombre</th>
+              <th className="px-3 py-2.5 font-semibold">Descripción</th>
               <th className="px-3 py-2.5 font-semibold">Estado</th>
               <th className="px-3 py-2.5 font-semibold text-right">Acciones</th>
             </tr>
@@ -132,12 +135,34 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
                     </button>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-700">
-                      Activa
+                    <span className="text-sm text-slate-500">
+                      {category.descripcion || <span className="italic opacity-50">Sin descripción</span>}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${category.disponible !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {category.disponible !== false ? 'Activa' : 'Inactiva'}
                     </span>
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const newState = category.disponible === false ? true : false;
+                            await updateCategory(category.id, { disponible: newState });
+                            toast.success(`Categoría ${newState ? 'activada' : 'desactivada'}.`);
+                            await fetchCategories();
+                          } catch (err) {
+                            toast.error('Error al cambiar el estado.');
+                          }
+                        }}
+                        className={`rounded-full border p-2 ${category.disponible !== false ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                        aria-label={category.disponible !== false ? 'Desactivar categoría' : 'Activar categoría'}
+                      >
+                        <Icon icon={category.disponible !== false ? 'mdi:eye-off-outline' : 'mdi:eye-outline'} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => {

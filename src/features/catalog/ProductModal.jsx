@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { getCategories } from '../categories/categoryService'
+import { analyzeProductImage, generateProductDescription } from '../../services/aiService'
 
 export default function ProductModal({ product, onClose, onSubmit, mode = 'create' }) {
   const isEdit = mode === 'edit'
   const [categories, setCategories] = useState([])
+  const [nombre, setNombre] = useState(product?.nombre || '')
+  const [categoria, setCategoria] = useState(product?.categoria || '')
+  const [descripcion, setDescripcion] = useState(product?.descripcion || '')
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -18,6 +23,43 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
 
     fetchCategories()
   }, [])
+
+  const handleMagicDescription = async () => {
+    if (!nombre || !categoria) {
+      alert('Por favor, ingresa un nombre y una categoría primero para generar la descripción.');
+      return;
+    }
+    try {
+      setAiLoading(true);
+      const generated = await generateProductDescription(nombre, categoria);
+      setDescripcion(generated);
+    } catch (error) {
+      alert('Error al generar la descripción: ' + error.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        setAiLoading(true);
+        const data = await analyzeProductImage(file);
+        if (data.categoria && !categoria) {
+          setCategoria(data.categoria);
+        }
+        if (data.etiquetas && data.etiquetas.length > 0) {
+          const tagsString = data.etiquetas.join(', ');
+          setDescripcion(prev => prev ? \`\${prev}\\n\\nEtiquetas: \${tagsString}\` : \`Etiquetas: \${tagsString}\`);
+        }
+      } catch (error) {
+        console.error('Error al analizar imagen con IA:', error);
+      } finally {
+        setAiLoading(false);
+      }
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
@@ -40,7 +82,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
             Nombre
             <input
-              defaultValue={product?.nombre || ''}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
               name="nombre"
               required
               minLength={2}
@@ -65,7 +108,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
             Categoría
             <input
-              defaultValue={product?.categoria || ''}
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
               name="categoria"
               list="product-categories"
               placeholder="Selecciona una categoría"
@@ -83,15 +127,26 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
 
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
             Descripción
-            <textarea
-              defaultValue={product?.descripcion || ''}
-              name="descripcion"
-              rows={4}
-              required
-              minLength={10}
-              maxLength={500}
-              className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
-            />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <textarea
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                name="descripcion"
+                rows={4}
+                required
+                minLength={10}
+                maxLength={500}
+                className="w-full rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+              />
+              <button 
+                type="button" 
+                onClick={handleMagicDescription} 
+                disabled={aiLoading} 
+                className="mt-1 flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-100 disabled:opacity-50"
+              >
+                <Icon icon="mdi:magic" /> IA
+              </button>
+            </div>
           </label>
 
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -110,7 +165,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
           {!isEdit && (
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
               Imagen
-              <input type="file" name="imagen" accept="image/*" required className="rounded-2xl border border-rose-200 bg-white px-3 py-2" />
+              <input type="file" name="imagen" accept="image/*" onChange={handleImageSelect} required className="rounded-2xl border border-rose-200 bg-white px-3 py-2" />
+              {aiLoading && <p className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Icon icon="mdi:loading" className="animate-spin" /> IA analizando...</p>}
             </label>
           )}
 
