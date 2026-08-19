@@ -120,6 +120,7 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               list="product-categories"
               placeholder="Selecciona una categoría"
               required
+              disabled={isView}
               minLength={2}
               maxLength={80}
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"

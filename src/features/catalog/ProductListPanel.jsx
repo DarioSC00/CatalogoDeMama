@@ -114,23 +114,23 @@ export default function ProductListPanel({ onProductChange }) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="min-w-full text-left text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full table-fixed text-left text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
-              <th className="px-3 py-2.5 font-semibold">Nombre</th>
-              <th className="px-3 py-2.5 font-semibold hidden md:table-cell">Descripción</th>
-              <th className="px-3 py-2.5 font-semibold">Precio</th>
-              <th className="px-3 py-2.5 font-semibold">Categoría</th>
-              <th className="px-3 py-2.5 font-semibold">Stock</th>
-              <th className="px-3 py-2.5 font-semibold">Estado</th>
-              <th className="px-3 py-2.5 font-semibold text-right">Acciones</th>
+              <th className="w-[17%] px-3 py-2.5 font-semibold">Nombre</th>
+              <th className="hidden w-[25%] px-3 py-2.5 font-semibold md:table-cell">Descripción</th>
+              <th className="w-[12%] px-3 py-2.5 font-semibold">Precio</th>
+              <th className="w-[15%] px-3 py-2.5 font-semibold">Categoría</th>
+              <th className="w-[8%] px-3 py-2.5 font-semibold">Stock</th>
+              <th className="w-[11%] px-3 py-2.5 font-semibold">Estado</th>
+              <th className="w-[220px] px-3 py-2.5 font-semibold">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-sm text-slate-500">
+                <td colSpan={7} className="px-3 py-6 text-center text-sm text-slate-500">
                   Cargando productos...
                 </td>
               </tr>
@@ -154,7 +154,7 @@ export default function ProductListPanel({ onProductChange }) {
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex gap-2">
                       <button
                         type="button"
                         title={product.disponible ? 'Desactivar producto' : 'Activar producto'}
@@ -210,7 +210,7 @@ export default function ProductListPanel({ onProductChange }) {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-sm text-slate-500">
+                <td colSpan={7} className="px-3 py-6 text-center text-sm text-slate-500">
                   No hay productos.
                 </td>
               </tr>

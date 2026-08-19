@@ -31,9 +31,14 @@ export default function Catalogo({ selectedCategory = '' }) {
     setFilters((prev) => ({ ...prev, category: selectedCategory }))
   }, [selectedCategory])
 
-  const categories = useMemo(
-    () => [...new Set(productos.map((product) => product.categoria).filter(Boolean))],
+  const availableProducts = useMemo(
+    () => productos.filter((product) => product.disponible !== false),
     [productos]
+  )
+
+  const categories = useMemo(
+    () => [...new Set(availableProducts.map((product) => product.categoria).filter(Boolean))],
+    [availableProducts]
   )
 
   useEffect(() => {
@@ -58,7 +63,7 @@ export default function Catalogo({ selectedCategory = '' }) {
   }, [filters.search, filters.aiSearch])
 
   const filteredProducts = useMemo(() => {
-    const baseList = aiSearchResults !== null ? aiSearchResults : productos
+    const baseList = (aiSearchResults !== null ? aiSearchResults : availableProducts).filter((product) => product.disponible !== false)
 
     const normalizedSearch = filters.search.trim().toLowerCase()
     const min = Number(filters.minPrice || 0)
@@ -77,7 +82,7 @@ export default function Catalogo({ selectedCategory = '' }) {
 
       return matchesSearch && matchesCategory && matchesMin && matchesMax
     })
-  }, [productos, aiSearchResults, filters])
+  }, [availableProducts, aiSearchResults, filters])
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
   const currentProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -96,10 +101,10 @@ export default function Catalogo({ selectedCategory = '' }) {
     })
   }
 
-  const featuredProduct = productos[0]
-  const totalInventory = productos.reduce((total, product) => total + Number(product.stock || 0), 0)
-  const averagePrice = productos.length
-    ? productos.reduce((total, product) => total + Number(product.precio || 0), 0) / productos.length
+  const featuredProduct = availableProducts[0]
+  const totalInventory = availableProducts.reduce((total, product) => total + Number(product.stock || 0), 0)
+  const averagePrice = availableProducts.length
+    ? availableProducts.reduce((total, product) => total + Number(product.precio || 0), 0) / availableProducts.length
     : 0
 
   if (loading) {
@@ -121,7 +126,7 @@ export default function Catalogo({ selectedCategory = '' }) {
           <h2>Encuentra algo<br /><em>extraordinario.</em></h2>
           <p className="catalog-hero__lead">Piezas especiales, elegidas con calma y presentadas para inspirar tu próxima elección.</p>
           <div className="catalog-hero__stats">
-            <span><strong>{productos.length}</strong> piezas</span>
+            <span><strong>{availableProducts.length}</strong> piezas</span>
             <span><strong>{categories.length}</strong> colecciones</span>
           </div>
         </div>
@@ -137,7 +142,7 @@ export default function Catalogo({ selectedCategory = '' }) {
       </section>
 
       <section className="catalog-insights" aria-label="Resumen del catálogo">
-        <div><Icon icon="mdi:package-variant-closed" /><span>Inventario</span><strong>{totalInventory || productos.length} <small>unidades</small></strong></div>
+        <div><Icon icon="mdi:package-variant-closed" /><span>Inventario</span><strong>{totalInventory || availableProducts.length} <small>unidades</small></strong></div>
         <div><Icon icon="mdi:shape-outline" /><span>Categorías</span><strong>{categories.length} <small>colecciones</small></strong></div>
         <div><Icon icon="mdi:tag-outline" /><span>Precio medio</span><strong>${Math.round(averagePrice).toLocaleString('es-CO')}</strong></div>
       </section>

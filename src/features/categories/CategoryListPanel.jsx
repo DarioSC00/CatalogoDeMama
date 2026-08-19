@@ -101,7 +101,7 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
               <th className="px-3 py-2.5 font-semibold">Nombre</th>
               <th className="px-3 py-2.5 font-semibold">Descripción</th>
               <th className="px-3 py-2.5 font-semibold">Estado</th>
-              <th className="px-3 py-2.5 font-semibold text-right">Acciones</th>
+              <th className="px-3 py-2.5 font-semibold">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -128,7 +128,7 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={async () => {
@@ -138,10 +138,22 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
                             // error handled
                           }
                         }}
-                        className={`rounded-full border p-2 ${category.disponible !== false ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                        className={`rounded-full border p-2 ${category.disponible !== false ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                         aria-label={category.disponible !== false ? 'Desactivar categoría' : 'Activar categoría'}
                       >
-                        <Icon icon={category.disponible !== false ? 'mdi:eye-off-outline' : 'mdi:eye-outline'} />
+                        <Icon icon={category.disponible !== false ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off-outline'} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Ver detalles de la categoría"
+                        onClick={() => {
+                          setSelectedCategoryItem(category)
+                          setModalMode('view')
+                        }}
+                        className="rounded-full border border-sky-200 bg-sky-50 p-2 text-sky-600 hover:bg-sky-100"
+                        aria-label="Ver detalles"
+                      >
+                        <Icon icon="mdi:eye-outline" />
                       </button>
                       <button
                         type="button"

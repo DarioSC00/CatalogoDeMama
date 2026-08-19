@@ -22,7 +22,7 @@ createRoot(rootElement).render(
         hideProgressBar={false}
         newestOnTop
         closeOnClick
-        pauseOnHover
+        pauseOnHover={false}
         draggable
         theme="light"
         toastClassName="catalog-toast"

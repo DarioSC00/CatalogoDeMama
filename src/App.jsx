@@ -7,7 +7,6 @@ import { supabase } from './supabaseClient'
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'mdi:view-dashboard-outline' },
-  { to: '/catalog', label: 'Catálogo', icon: 'mdi:storefront-outline' },
   { to: '/admin/categories', label: 'Categorías', icon: 'mdi:tag-outline' },
   { to: '/admin/products', label: 'Productos', icon: 'mdi:package-variant-closed' },
 ]

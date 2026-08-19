@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS productos (
 -- CREATE TABLE IF NOT EXISTS no agrega columnas a tablas ya existentes.
 ALTER TABLE productos ADD COLUMN IF NOT EXISTS categoria TEXT;
 ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE productos ADD COLUMN IF NOT EXISTS disponible BOOLEAN DEFAULT TRUE;
+UPDATE productos SET disponible = TRUE WHERE disponible IS NULL;
+ALTER TABLE productos ALTER COLUMN disponible SET DEFAULT TRUE;
+ALTER TABLE productos ALTER COLUMN disponible SET NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria);
 CREATE INDEX IF NOT EXISTS idx_productos_disponible ON productos(disponible);
