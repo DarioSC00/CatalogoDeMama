@@ -12,7 +12,17 @@ if (apiKey && apiKey !== 'tu_api_key_aqui' && apiKey !== 'your-gemini-api-key') 
  * Generate an attractive description based on name and category.
  */
 export async function generateProductDescription(name, category) {
-  if (!ai) throw new Error('API Key de Gemini no configurada.');
+  const cleanName = String(name || '').trim()
+  const cleanCategory = String(category || '').trim()
+
+  if (!cleanName || !cleanCategory) {
+    throw new Error('Ingresa el nombre y la categoría antes de generar la descripción.')
+  }
+
+  // El formulario sigue funcionando aunque Gemini no esté configurado.
+  if (!ai) {
+    return `${cleanName} es una pieza especial de nuestra colección de ${cleanCategory}. Su diseño combina estilo, calidad y practicidad para acompañarte en cada ocasión. Descubre todos sus detalles y hazlo parte de tu selección.`
+  }
 
   const prompt = `Actúa como un experto en redacción publicitaria (copywriting) para comercio electrónico.
 Genera una descripción de producto atractiva y persuasiva para un producto llamado "${name}" que pertenece a la categoría "${category}".
@@ -25,7 +35,9 @@ Solo devuelve la descripción, nada de texto extra.`;
     contents: prompt,
   });
 
-  return response.text.trim();
+  const generated = response.text?.trim()
+  if (!generated) throw new Error('Gemini no devolvió una descripción.')
+  return generated
 }
 
 /**

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toast } from 'react-toastify'
 import { Icon } from '@iconify/react'
 import { createCategory, deleteCategory, getCategories, updateCategory } from './categoryService'
 import CategoryModal from './CategoryModal'
@@ -15,7 +16,7 @@ export default function CategoriesPanel({ onCategoryChange, selectedCategory }) 
       setCategories(data)
     } catch (error) {
       console.error(error)
-      alert('No se pudieron cargar las categorías.')
+      toast.error('No se pudieron cargar las categorías.')
     }
   }
 
@@ -30,7 +31,7 @@ export default function CategoriesPanel({ onCategoryChange, selectedCategory }) 
 
     const validationError = validateRequiredText(nombre, 'El nombre de la categoría')
     if (validationError) {
-      alert(validationError)
+      toast.warn(validationError)
       return
     }
 
@@ -49,7 +50,7 @@ export default function CategoriesPanel({ onCategoryChange, selectedCategory }) 
       await fetchCategories()
     } catch (error) {
       console.error(error)
-      alert('No se pudo guardar la categoría.')
+      toast.error('No se pudo guardar la categoría.')
     }
   }
 
@@ -62,7 +63,7 @@ export default function CategoriesPanel({ onCategoryChange, selectedCategory }) 
       await fetchCategories()
     } catch (error) {
       console.error(error)
-      alert('No se pudo eliminar la categoría.')
+      toast.error('No se pudo eliminar la categoría.')
     }
   }
 

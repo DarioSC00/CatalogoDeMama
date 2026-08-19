@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { toast } from 'react-toastify'
 import { getCategories } from '../categories/categoryService'
 import { analyzeProductImage, generateProductDescription } from '../../services/aiService'
 
 export default function ProductModal({ product, onClose, onSubmit, mode = 'create' }) {
   const isEdit = mode === 'edit'
+  const isView = mode === 'view'
   const [categories, setCategories] = useState([])
   const [nombre, setNombre] = useState(product?.nombre || '')
   const [categoria, setCategoria] = useState(product?.categoria || '')
@@ -25,16 +27,18 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
   }, [])
 
   const handleMagicDescription = async () => {
-    if (!nombre || !categoria) {
-      alert('Por favor, ingresa un nombre y una categoría primero para generar la descripción.');
+    const cleanName = nombre.trim()
+    const cleanCategory = categoria.trim()
+    if (!cleanName || !cleanCategory) {
+      toast.warn('Ingresa un nombre y una categoría primero.', { toastId: 'description-fields-required' })
       return;
     }
     try {
       setAiLoading(true);
-      const generated = await generateProductDescription(nombre, categoria);
+      const generated = await generateProductDescription(cleanName, cleanCategory);
       setDescripcion(generated);
     } catch (error) {
-      alert('Error al generar la descripción: ' + error.message);
+      toast.error(error.message || 'No se pudo generar la descripción.')
     } finally {
       setAiLoading(false);
     }
@@ -51,7 +55,7 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
         }
         if (data.etiquetas && data.etiquetas.length > 0) {
           const tagsString = data.etiquetas.join(', ');
-          setDescripcion(prev => prev ? \`\${prev}\\n\\nEtiquetas: \${tagsString}\` : \`Etiquetas: \${tagsString}\`);
+          setDescripcion((prev) => (prev ? `${prev}\n\nEtiquetas: ${tagsString}` : `Etiquetas: ${tagsString}`));
         }
       } catch (error) {
         console.error('Error al analizar imagen con IA:', error);
@@ -66,8 +70,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
       <div className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">{isEdit ? 'Editar' : 'Crear'}</p>
-            <h3 className="text-2xl font-black text-slate-900">{isEdit ? 'Producto' : 'Nuevo producto'}</h3>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">{isView ? 'Detalles' : isEdit ? 'Editar' : 'Crear'}</p>
+            <h3 className="text-2xl font-black text-slate-900">{isView ? 'Ver producto' : isEdit ? 'Producto' : 'Nuevo producto'}</h3>
           </div>
           <button
             type="button"
@@ -88,7 +92,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               required
               minLength={2}
               maxLength={80}
-              className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+              disabled={isView}
+              className={`rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400 ${isView ? 'opacity-70 bg-slate-50' : ''}`}
             />
           </label>
 
@@ -101,7 +106,8 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               min="0"
               step="0.01"
               required
-              className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+              disabled={isView}
+              className={`rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400 ${isView ? 'opacity-70 bg-slate-50' : ''}`}
             />
           </label>
 
@@ -136,16 +142,19 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
                 required
                 minLength={10}
                 maxLength={500}
-                className="w-full rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+                disabled={isView}
+                className={`w-full rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400 ${isView ? 'opacity-70 bg-slate-50' : ''}`}
               />
-              <button 
-                type="button" 
-                onClick={handleMagicDescription} 
-                disabled={aiLoading} 
-                className="mt-1 flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-100 disabled:opacity-50"
-              >
-                <Icon icon="mdi:magic" /> IA
-              </button>
+              {!isView && (
+                <button 
+                  type="button" 
+                  onClick={handleMagicDescription} 
+                  disabled={aiLoading} 
+                  className="mt-1 flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-100 disabled:opacity-50"
+                >
+                  <Icon icon="mdi:magic" /> IA
+                </button>
+              )}
             </div>
           </label>
 
@@ -158,11 +167,12 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
               min="0"
               step="1"
               required
-              className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
+              disabled={isView}
+              className={`rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400 ${isView ? 'opacity-70 bg-slate-50' : ''}`}
             />
           </label>
 
-          {!isEdit && (
+          {!isEdit && !isView && (
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
               Imagen
               <input type="file" name="imagen" accept="image/*" onChange={handleImageSelect} required className="rounded-2xl border border-rose-200 bg-white px-3 py-2" />
@@ -170,13 +180,22 @@ export default function ProductModal({ product, onClose, onSubmit, mode = 'creat
             </label>
           )}
 
+          {isView && product?.url_imagen && (
+            <div className="md:col-span-2 flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Imagen
+              <img src={product.url_imagen} alt={product.nombre} className="max-h-48 rounded-xl object-contain border border-slate-200 bg-slate-50" />
+            </div>
+          )}
+
           <div className="md:col-span-2 flex items-center justify-end gap-3">
             <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100">
-              Cancelar
+              {isView ? 'Cerrar' : 'Cancelar'}
             </button>
-            <button type="submit" className="rounded-full bg-slate-900 px-5 py-2.5 font-semibold text-white hover:bg-slate-800">
-              {isEdit ? 'Guardar cambios' : 'Crear producto'}
-            </button>
+            {!isView && (
+              <button type="submit" className="rounded-full bg-slate-900 px-5 py-2.5 font-semibold text-white hover:bg-slate-800">
+                {isEdit ? 'Guardar cambios' : 'Crear producto'}
+              </button>
+            )}
           </div>
         </form>
       </div>

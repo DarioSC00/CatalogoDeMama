@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { toast } from 'react-toastify'
 import imageCompression from 'browser-image-compression'
 import { supabase } from '../../supabaseClient'
 import { getCategories } from '../categories/categoryService'
@@ -38,7 +39,7 @@ export default function NuevoProducto({ onProductoCreado }) {
       validateImage(imagen)
 
     if (validationError) {
-      alert(validationError)
+      toast.warn(validationError)
       return
     }
 
@@ -77,7 +78,7 @@ export default function NuevoProducto({ onProductoCreado }) {
 
       if (dbError) throw dbError
 
-      alert('¡Producto agregado con éxito!')
+      toast.success('Producto agregado con éxito.')
       setNombre('')
       setPrecio('')
       setDescripcion('')
@@ -86,7 +87,7 @@ export default function NuevoProducto({ onProductoCreado }) {
       if (onProductoCreado) onProductoCreado()
     } catch (err) {
       console.error(err)
-      alert('Error al guardar el producto: ' + (err.message || err))
+      toast.error(err.message || 'No se pudo guardar el producto.')
     } finally {
       setSubiendo(false)
     }

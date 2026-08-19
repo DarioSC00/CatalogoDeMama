@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { toast } from 'react-toastify'
 import imageCompression from 'browser-image-compression'
 import { supabase } from '../supabaseClient'
 import { normalizeText, validateDescription, validateImage, validatePrice, validateRequiredText } from '../utils/validation'
-import { analyzeProductImage, generateProductDescription } from '../services/aiService'
+import { analyzeProductImage, generateEmbedding, generateProductDescription } from '../services/aiService'
 export default function NuevoProducto({ onProductoCreado }) {
   const [nombre, setNombre] = useState('')
   const [precio, setPrecio] = useState('')
@@ -22,7 +23,7 @@ export default function NuevoProducto({ onProductoCreado }) {
       validateDescription(descripcion) ||
       validateImage(imagen)
 
-    if (validationError) return alert(validationError)
+    if (validationError) return toast.warn(validationError)
 
     try {
       setSubiendo(true)
@@ -66,7 +67,7 @@ export default function NuevoProducto({ onProductoCreado }) {
 
       if (dbError) throw dbError
 
-      alert('¡Producto agregado con éxito!')
+      toast.success('Producto agregado con éxito.')
       setNombre('')
       setPrecio('')
       setDescripcion('')
@@ -74,7 +75,7 @@ export default function NuevoProducto({ onProductoCreado }) {
       setImagen(null)
       if (onProductoCreado) onProductoCreado()
     } catch (err) {
-      alert('Error al guardar el producto: ' + (err.message || err))
+      toast.error(err.message || 'No se pudo guardar el producto.')
     } finally {
       setSubiendo(false)
     }
@@ -93,7 +94,7 @@ export default function NuevoProducto({ onProductoCreado }) {
         }
         if (data.etiquetas && data.etiquetas.length > 0) {
           const tagsString = data.etiquetas.join(', ');
-          setDescripcion(prev => prev ? \`\${prev}\\n\\nEtiquetas: \${tagsString}\` : \`Etiquetas: \${tagsString}\`);
+          setDescripcion((prev) => (prev ? `${prev}\n\nEtiquetas: ${tagsString}` : `Etiquetas: ${tagsString}`));
         }
       } catch (error) {
         console.error('Error al analizar imagen con IA:', error);
@@ -105,7 +106,7 @@ export default function NuevoProducto({ onProductoCreado }) {
 
   const handleMagicDescription = async () => {
     if (!nombre || !categoria) {
-      alert('Por favor, ingresa un nombre y una categoría primero para generar la descripción.');
+      toast.warn('Ingresa un nombre y una categoría primero.', { toastId: 'description-fields-required' })
       return;
     }
     try {
@@ -113,7 +114,7 @@ export default function NuevoProducto({ onProductoCreado }) {
       const generated = await generateProductDescription(nombre, categoria);
       setDescripcion(generated);
     } catch (error) {
-      alert('Error al generar la descripción: ' + error.message);
+      toast.error(error.message || 'No se pudo generar la descripción.')
     } finally {
       setAiLoading(false);
     }

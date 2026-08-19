@@ -16,7 +16,19 @@ createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
-      <ToastContainer position="top-right" autoClose={2500} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover theme="light" />
+      <ToastContainer
+        position="top-right"
+        autoClose={3200}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+        toastClassName="catalog-toast"
+        bodyClassName="catalog-toast__body"
+        progressClassName="catalog-toast__progress"
+      />
     </BrowserRouter>
   </React.StrictMode>
 )

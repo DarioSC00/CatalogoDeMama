@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
-import { getProducts } from '../catalog/productService'
+import { useProducts } from '../../hooks/useProducts'
 import { getDriveDirectUrl } from '../../utils/drive'
 import { chatWithAssistant } from '../../services/aiService'
 
@@ -49,24 +49,13 @@ function CategoryDonut({ categories, total }) {
 }
 
 export default function Dashboard() {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { products, loading, fetchProducts } = useProducts()
   const [aiInsight, setAiInsight] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setProducts(await getProducts())
-      } catch (error) {
-        console.error(error)
-        toast.error('No se pudieron cargar los datos del dashboard.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadProducts()
-  }, [])
+    fetchProducts()
+  }, [fetchProducts])
 
   const metrics = useMemo(() => {
     const stock = products.reduce((sum, product) => sum + Number(product.stock || 0), 0)

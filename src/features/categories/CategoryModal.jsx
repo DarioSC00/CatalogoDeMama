@@ -39,8 +39,10 @@ export default function CategoryModal({ mode, category, onClose, onSubmit }) {
               name="descripcion"
               defaultValue={category?.descripcion || ''}
               rows={3}
+              required
+              minLength={10}
               maxLength={250}
-              placeholder="Opcional: Descripción de la categoría"
+              placeholder="Describe qué productos reúne esta categoría"
               className="rounded-2xl border border-rose-200 bg-white px-3 py-2 outline-none transition focus:border-rose-400"
             />
           </label>

@@ -2,28 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import CategoryModal from './CategoryModal'
-import { createCategory, deleteCategory, getCategories, updateCategory } from './categoryService'
-import { normalizeText, validateRequiredText } from '../../utils/validation'
+import { useCategories } from '../../hooks/useCategories'
+import { normalizeText, validateDescription, validateRequiredText } from '../../utils/validation'
 
 export default function CategoryListPanel({ onCategoryChange, selectedCategory }) {
-  const [categories, setCategories] = useState([])
+  const { categories, fetchCategories, addCategory, editCategory, removeCategory, toggleCategoryStatus } = useCategories()
   const [modalMode, setModalMode] = useState(null)
   const [selectedCategoryItem, setSelectedCategoryItem] = useState(null)
   const [search, setSearch] = useState('')
 
-  const fetchCategories = async () => {
-    try {
-      const data = await getCategories()
-      setCategories(data)
-    } catch (error) {
-      console.error(error)
-      toast.error('No se pudieron cargar las categorías.')
-    }
-  }
-
   useEffect(() => {
     fetchCategories()
-  }, [])
+  }, [fetchCategories])
 
   const filteredCategories = useMemo(
     () => categories.filter((category) => category.nombre?.toLowerCase().includes(search.toLowerCase())),
@@ -35,9 +25,9 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
     const form = event.target
     const formData = new FormData(form)
     const nombre = normalizeText(formData.get('nombre'))
-    const descripcion = normalizeText(formData.get('descripcion')) || null
+    const descripcion = normalizeText(formData.get('descripcion'))
 
-    const validationError = validateRequiredText(nombre, 'El nombre de la categoría')
+    const validationError = validateRequiredText(nombre, 'El nombre de la categoría') || validateDescription(descripcion)
     if (validationError) {
       toast.warn(validationError)
       return
@@ -45,22 +35,18 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
 
     try {
       if (modalMode === 'create') {
-        await createCategory({ nombre, descripcion, disponible: true })
-        toast.success('Categoría creada correctamente.')
+        await addCategory({ nombre, descripcion })
       }
 
       if (modalMode === 'edit' && selectedCategoryItem) {
-        await updateCategory(selectedCategoryItem.id, { nombre, descripcion })
-        toast.success('Categoría actualizada.')
+        await editCategory(selectedCategoryItem.id, { nombre, descripcion })
       }
 
       form.reset()
       setModalMode(null)
       setSelectedCategoryItem(null)
-      await fetchCategories()
     } catch (error) {
-      console.error(error)
-      toast.error(error?.message || 'No se pudo guardar la categoría.')
+      // handled
     }
   }
 
@@ -69,15 +55,12 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
     if (!confirmDelete) return
 
     try {
-      await deleteCategory(category.id)
-      await fetchCategories()
-      toast.success('Categoría eliminada.')
+      await removeCategory(category.id)
       if (onCategoryChange && selectedCategory === category.nombre) {
         onCategoryChange('')
       }
     } catch (error) {
-      console.error(error)
-      toast.error(error?.message || 'No se pudo eliminar la categoría.')
+      // handled
     }
   }
 
@@ -150,12 +133,9 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
                         type="button"
                         onClick={async () => {
                           try {
-                            const newState = category.disponible === false ? true : false;
-                            await updateCategory(category.id, { disponible: newState });
-                            toast.success(`Categoría ${newState ? 'activada' : 'desactivada'}.`);
-                            await fetchCategories();
+                            await toggleCategoryStatus(category);
                           } catch (err) {
-                            toast.error('Error al cambiar el estado.');
+                            // error handled
                           }
                         }}
                         className={`rounded-full border p-2 ${category.disponible !== false ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
@@ -188,7 +168,7 @@ export default function CategoryListPanel({ onCategoryChange, selectedCategory }
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="px-3 py-6 text-center text-sm text-slate-500">
+                <td colSpan={4} className="px-3 py-6 text-center text-sm text-slate-500">
                   No hay categorías.
                 </td>
               </tr>

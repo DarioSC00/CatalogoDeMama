@@ -2,32 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { toast } from 'react-toastify'
 import ProductModal from './ProductModal'
-import { createProduct, deleteProduct, getProducts, updateProduct, uploadImageToStorage } from './productService'
+import { useProducts } from '../../hooks/useProducts'
 import { normalizeText, validateDescription, validateImage, validatePrice, validateRequiredText, validateStock } from '../../utils/validation'
 
 export default function ProductListPanel({ onProductChange }) {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { products, loading, fetchProducts, addProduct, editProduct, removeProduct, toggleProductStatus } = useProducts()
   const [modalMode, setModalMode] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [search, setSearch] = useState('')
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true)
-      const data = await getProducts()
-      setProducts(data)
-    } catch (error) {
-      console.error(error)
-      toast.error('No se pudieron cargar los productos.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [fetchProducts])
 
   const filteredProducts = useMemo(
     () => products.filter((product) => `${product.nombre} ${product.categoria}`.toLowerCase().includes(search.toLowerCase())),
@@ -62,30 +48,26 @@ export default function ProductListPanel({ onProductChange }) {
     try {
       if (modalMode === 'create') {
         const file = formData.get('imagen')
-        const imageError = validateImage(file)
-        if (imageError) {
-          toast.warn(imageError)
-          return
+        if (file && file.size > 0) {
+          const imageError = validateImage(file)
+          if (imageError) {
+            toast.warn(imageError)
+            return
+          }
         }
-
-        const publicUrl = await uploadImageToStorage(file)
-        await createProduct({ ...payload, url_imagen: publicUrl, disponible: true })
-        toast.success('Producto creado correctamente.')
+        await addProduct(payload, file && file.size > 0 ? file : null)
       }
 
       if (modalMode === 'edit' && selectedProduct) {
-        await updateProduct(selectedProduct.id, payload)
-        toast.success('Producto actualizado.')
+        await editProduct(selectedProduct.id, payload)
       }
 
       form.reset()
       setModalMode(null)
       setSelectedProduct(null)
-      await fetchProducts()
       if (onProductChange) onProductChange()
     } catch (error) {
-      console.error(error)
-      toast.error(error?.message || 'No se pudo guardar el producto.')
+      // Error already handled in hook
     }
   }
 
@@ -94,13 +76,10 @@ export default function ProductListPanel({ onProductChange }) {
     if (!confirmDelete) return
 
     try {
-      await deleteProduct(product.id)
-      await fetchProducts()
+      await removeProduct(product.id)
       if (onProductChange) onProductChange()
-      toast.success('Producto eliminado.')
     } catch (error) {
-      console.error(error)
-      toast.error(error?.message || 'No se pudo eliminar el producto.')
+      // Error already handled in hook
     }
   }
 
@@ -112,6 +91,7 @@ export default function ProductListPanel({ onProductChange }) {
         </div>
         <button
           type="button"
+          title="Crear nuevo producto"
           onClick={() => {
             setModalMode('create')
             setSelectedProduct(null)
@@ -126,6 +106,7 @@ export default function ProductListPanel({ onProductChange }) {
       <div className="mb-4">
         <input
           type="text"
+          title="Buscar productos por nombre o categoría"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar producto"
@@ -138,6 +119,7 @@ export default function ProductListPanel({ onProductChange }) {
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-3 py-2.5 font-semibold">Nombre</th>
+              <th className="px-3 py-2.5 font-semibold hidden md:table-cell">Descripción</th>
               <th className="px-3 py-2.5 font-semibold">Precio</th>
               <th className="px-3 py-2.5 font-semibold">Categoría</th>
               <th className="px-3 py-2.5 font-semibold">Stock</th>
@@ -156,12 +138,16 @@ export default function ProductListPanel({ onProductChange }) {
               filteredProducts.map((product) => (
                 <tr key={product.id} className="border-t border-slate-100 align-top">
                   <td className="px-3 py-3 font-medium text-slate-700">{product.nombre}</td>
+                  <td className="px-3 py-3 text-slate-500 text-xs hidden md:table-cell">
+                    {product.descripcion?.length > 40 ? `${product.descripcion.substring(0, 40)}...` : (product.descripcion || 'Sin descripción')}
+                  </td>
                   <td className="px-3 py-3 text-slate-700">${Number(product.precio || 0).toLocaleString('es-CO')}</td>
                   <td className="px-3 py-3">
                     <span className="inline-flex rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-rose-600">
                       {product.categoria || 'General'}
                     </span>
                   </td>
+                  <td className="px-3 py-3 text-slate-700">{product.stock || 0}</td>
                   <td className="px-3 py-3">
                     <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${product.disponible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                       {product.disponible ? 'Activo' : 'Inactivo'}
@@ -171,23 +157,35 @@ export default function ProductListPanel({ onProductChange }) {
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
+                        title={product.disponible ? 'Desactivar producto' : 'Activar producto'}
                         onClick={async () => {
                           try {
-                            await updateProduct(product.id, { disponible: !product.disponible });
-                            toast.success(`Producto ${product.disponible ? 'desactivado' : 'activado'}.`);
-                            await fetchProducts();
+                            await toggleProductStatus(product);
                             if (onProductChange) onProductChange();
                           } catch (err) {
-                            toast.error('Error al cambiar el estado.');
+                            // Error is handled in the hook
                           }
                         }}
-                        className={`rounded-full border p-2 ${product.disponible ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                        className={`rounded-full border p-2 ${product.disponible ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                         aria-label={product.disponible ? 'Desactivar producto' : 'Activar producto'}
                       >
-                        <Icon icon={product.disponible ? 'mdi:eye-off-outline' : 'mdi:eye-outline'} />
+                        <Icon icon={product.disponible ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off-outline'} />
                       </button>
                       <button
                         type="button"
+                        title="Ver detalles del producto"
+                        onClick={() => {
+                          setSelectedProduct(product)
+                          setModalMode('view')
+                        }}
+                        className="rounded-full border border-sky-200 bg-sky-50 p-2 text-sky-600 hover:bg-sky-100"
+                        aria-label="Ver detalles"
+                      >
+                        <Icon icon="mdi:eye-outline" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Editar producto"
                         onClick={() => {
                           setSelectedProduct(product)
                           setModalMode('edit')
@@ -199,6 +197,7 @@ export default function ProductListPanel({ onProductChange }) {
                       </button>
                       <button
                         type="button"
+                        title="Eliminar producto"
                         onClick={() => handleDelete(product)}
                         className="rounded-full border border-rose-200 bg-rose-50 p-2 text-rose-600 hover:bg-rose-100"
                         aria-label="Eliminar producto"

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
+import { toast } from 'react-toastify'
 import CatalogFilters from './CatalogFilters'
-import { getProducts, searchProductsSemantically } from './productService'
+import ProductDetailModal from './ProductDetailModal'
+import { useProducts } from '../../hooks/useProducts'
 import { getDriveDirectUrl } from '../../utils/drive'
 import AIChatbot from '../../components/AIChatbot'
 
 const PAGE_SIZE = 8
 
 export default function Catalogo({ selectedCategory = '' }) {
-  const [productos, setProductos] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { products: productos, loading, fetchProducts, searchSemantically } = useProducts()
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({
     search: '',
@@ -20,23 +21,11 @@ export default function Catalogo({ selectedCategory = '' }) {
   })
   const [aiSearchResults, setAiSearchResults] = useState(null)
   const [isSearchingAI, setIsSearchingAI] = useState(false)
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true)
-      const data = await getProducts()
-      setProductos(data)
-    } catch (error) {
-      console.error(error)
-      alert('No se pudieron cargar los productos.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [selectedProduct, setSelectedProduct] = useState(null)
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [fetchProducts])
 
   useEffect(() => {
     setFilters((prev) => ({ ...prev, category: selectedCategory }))
@@ -52,7 +41,7 @@ export default function Catalogo({ selectedCategory = '' }) {
       if (filters.aiSearch && filters.search.trim()) {
         setIsSearchingAI(true)
         try {
-          const results = await searchProductsSemantically(filters.search.trim(), 0.1, 20)
+          const results = await searchSemantically(filters.search.trim(), 0.1, 20)
           setAiSearchResults(results)
         } catch (error) {
           console.error('Semantic search error:', error)
@@ -178,11 +167,23 @@ export default function Catalogo({ selectedCategory = '' }) {
             const imageSrc = prod.url_imagen ? getDriveDirectUrl(prod.url_imagen) : ''
 
             return (
-              <article key={prod.id} className="catalog-card">
+              <article
+                key={prod.id}
+                className="catalog-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedProduct(prod)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setSelectedProduct(prod)
+                  }
+                }}
+              >
                 <div className="catalog-card__image-wrap">
                   {imageSrc ? <img src={imageSrc} alt={prod.nombre} loading="lazy" /> : <div className="catalog-card__placeholder"><Icon icon="mdi:image-outline" /></div>}
                   <span className="catalog-card__tag">{prod.categoria || 'General'}</span>
-                  <button type="button" className="catalog-card__favorite" aria-label={`Guardar ${prod.nombre}`}><Icon icon="mdi:heart-outline" /></button>
+                  <button type="button" className="catalog-card__favorite" aria-label={`Guardar ${prod.nombre}`} onClick={(event) => event.stopPropagation()}><Icon icon="mdi:heart-outline" /></button>
                 </div>
 
                 <div className="catalog-card__content">
@@ -191,7 +192,7 @@ export default function Catalogo({ selectedCategory = '' }) {
 
                   <div className="catalog-card__footer">
                     <p className="catalog-card__price">${Number(prod.precio || 0).toLocaleString('es-CO')}</p>
-                    <button type="button" className="catalog-card__cta" aria-label={`Ver ${prod.nombre}`}>
+                    <button type="button" className="catalog-card__cta" aria-label={`Ver ${prod.nombre}`} onClick={(event) => { event.stopPropagation(); setSelectedProduct(prod) }}>
                       <Icon icon="mdi:arrow-top-right" />
                     </button>
                   </div>
@@ -203,6 +204,8 @@ export default function Catalogo({ selectedCategory = '' }) {
       ) : (
         <div className="catalog-empty-state">No se encontraron productos con esos filtros.</div>
       )}
+
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
 
       {filteredProducts.length > PAGE_SIZE && (
         <div className="catalog-pagination">
