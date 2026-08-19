@@ -10,11 +10,22 @@ export default function CatalogFilters({ filters, onChange, categories, onReset 
       <div className="catalog-filter-row">
         <label className="catalog-filter-field">
           <span>Buscar</span>
-          <input
-            value={filters.search}
-            onChange={(e) => onChange('search', e.target.value)}
-            placeholder="Nombre o descripción"
-          />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              style={{ flex: 1 }}
+              value={filters.search}
+              onChange={(e) => onChange('search', e.target.value)}
+              placeholder="Ej: Ropa cómoda para el frío..."
+            />
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: filters.aiSearch ? 'var(--neon-accent)' : 'inherit' }}>
+              <input 
+                type="checkbox" 
+                checked={!!filters.aiSearch} 
+                onChange={(e) => onChange('aiSearch', e.target.checked)} 
+              />
+              ✨ IA
+            </label>
+          </div>
         </label>
 
         <label className="catalog-filter-field">

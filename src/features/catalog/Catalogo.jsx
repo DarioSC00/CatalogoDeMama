@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import CatalogFilters from './CatalogFilters'
-import { getProducts } from './productService'
+import { getProducts, searchProductsSemantically } from './productService'
 import { getDriveDirectUrl } from '../../utils/drive'
+import AIChatbot from '../../components/AIChatbot'
 
 const PAGE_SIZE = 8
 
@@ -12,10 +13,13 @@ export default function Catalogo({ selectedCategory = '' }) {
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({
     search: '',
+    aiSearch: false,
     category: selectedCategory,
     minPrice: '',
     maxPrice: '',
   })
+  const [aiSearchResults, setAiSearchResults] = useState(null)
+  const [isSearchingAI, setIsSearchingAI] = useState(false)
 
   const fetchProducts = async () => {
     try {
@@ -43,14 +47,38 @@ export default function Catalogo({ selectedCategory = '' }) {
     [productos]
   )
 
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (filters.aiSearch && filters.search.trim()) {
+        setIsSearchingAI(true)
+        try {
+          const results = await searchProductsSemantically(filters.search.trim(), 0.1, 20)
+          setAiSearchResults(results)
+        } catch (error) {
+          console.error('Semantic search error:', error)
+          setAiSearchResults([])
+        } finally {
+          setIsSearchingAI(false)
+        }
+      } else {
+        setAiSearchResults(null)
+      }
+    }, 500) // Debounce 500ms
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [filters.search, filters.aiSearch])
+
   const filteredProducts = useMemo(() => {
+    const baseList = aiSearchResults !== null ? aiSearchResults : productos
+
     const normalizedSearch = filters.search.trim().toLowerCase()
     const min = Number(filters.minPrice || 0)
     const max = Number(filters.maxPrice || Number.MAX_SAFE_INTEGER)
 
-    return productos.filter((product) => {
-      const matchesSearch =
-        !normalizedSearch ||
+    return baseList.filter((product) => {
+      // If AI search is active, we don't filter by text match anymore, the vector DB did it.
+      // We only apply text match if AI search is off.
+      const matchesSearch = filters.aiSearch || !normalizedSearch ||
         product.nombre?.toLowerCase().includes(normalizedSearch) ||
         product.descripcion?.toLowerCase().includes(normalizedSearch)
 
@@ -60,7 +88,7 @@ export default function Catalogo({ selectedCategory = '' }) {
 
       return matchesSearch && matchesCategory && matchesMin && matchesMax
     })
-  }, [productos, filters])
+  }, [productos, aiSearchResults, filters])
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
   const currentProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -72,6 +100,7 @@ export default function Catalogo({ selectedCategory = '' }) {
   const resetFilters = () => {
     setFilters({
       search: '',
+      aiSearch: false,
       category: selectedCategory,
       minPrice: '',
       maxPrice: '',
@@ -86,6 +115,13 @@ export default function Catalogo({ selectedCategory = '' }) {
 
   if (loading) {
     return <div className="catalog-loading">Cargando catálogo...</div>
+  }
+
+  if (isSearchingAI) {
+    return <div className="catalog-loading" style={{ flexDirection: 'column', gap: '10px' }}>
+      <Icon icon="mdi:robot-outline" style={{ fontSize: '40px', color: 'var(--neon-accent)' }} className="animate-bounce" />
+      <span>La IA está buscando las mejores coincidencias...</span>
+    </div>
   }
 
   return (
@@ -183,6 +219,8 @@ export default function Catalogo({ selectedCategory = '' }) {
           </button>
         </div>
       )}
+
+      <AIChatbot />
     </div>
   )
 }

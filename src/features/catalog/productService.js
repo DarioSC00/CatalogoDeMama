@@ -1,4 +1,5 @@
 import { supabase } from '../../supabaseClient'
+import { generateEmbedding } from '../../services/aiService'
 
 const TABLE = 'productos'
 const IMAGE_BUCKET = 'fotos-catalogo'
@@ -20,6 +21,14 @@ export async function getProducts() {
 }
 
 export async function createProduct(product) {
+  try {
+    const textToEmbed = `${product.nombre} ${product.descripcion} ${product.categoria}`;
+    const embedding = await generateEmbedding(textToEmbed);
+    product.embedding = `[${embedding.join(',')}]`;
+  } catch (err) {
+    console.warn('No se pudo generar embedding, guardando sin él.', err);
+  }
+
   const { data, error } = await supabase.from(TABLE).insert([product]).select().single()
 
   if (error) throw error
@@ -27,10 +36,37 @@ export async function createProduct(product) {
 }
 
 export async function updateProduct(id, product) {
+  if (product.nombre || product.descripcion || product.categoria) {
+    try {
+      // In a real scenario we'd want the full text, this is simplified.
+      const textToEmbed = `${product.nombre || ''} ${product.descripcion || ''} ${product.categoria || ''}`;
+      const embedding = await generateEmbedding(textToEmbed);
+      product.embedding = `[${embedding.join(',')}]`;
+    } catch (err) {
+      console.warn('No se pudo actualizar embedding.', err);
+    }
+  }
+
   const { data, error } = await supabase.from(TABLE).update(product).eq('id', id).select().single()
 
   if (error) throw error
   return normalizeProduct(data)
+}
+
+export async function searchProductsSemantically(query, threshold = 0.5, limit = 10) {
+  try {
+    const query_embedding = await generateEmbedding(query);
+    const { data, error } = await supabase.rpc('match_productos', {
+      query_embedding: `[${query_embedding.join(',')}]`,
+      match_threshold: threshold,
+      match_count: limit
+    });
+    if (error) throw error;
+    return (data || []).map(normalizeProduct);
+  } catch (error) {
+    console.error('Error in semantic search:', error);
+    return [];
+  }
 }
 
 export async function deleteProduct(id) {
